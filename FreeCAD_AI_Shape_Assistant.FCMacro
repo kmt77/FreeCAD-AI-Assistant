@@ -1,0 +1,244 @@
+# -*- coding: utf-8 -*-
+
+import FreeCAD as App
+import FreeCADGui as AppGui
+import Part
+import PartDesign
+import Sketcher
+import re
+import traceback
+import textwrap
+from PySide2 import QtWidgets, QtCore
+
+# Import OpenAI if available
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+
+class FreeCADAIDialog(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle('AI & Static Shape Assistant')
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # API key input
+        self.api_input = QtWidgets.QLineEdit()
+        self.api_input.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.api_input.setPlaceholderText('Enter OpenAI API Key')
+        self.api_input.setText(self.load_api_key())
+        layout.addWidget(self.api_input)
+
+        # Text input
+        self.prompt_input = QtWidgets.QTextEdit()
+        self.prompt_input.setPlaceholderText('Describe the object to create or choose static shape')
+        self.prompt_input.setMinimumHeight(80)
+        layout.addWidget(self.prompt_input)
+
+        # Buttons
+        btn_layout = QtWidgets.QHBoxLayout()
+        self.generate_btn = QtWidgets.QPushButton('Generate AI Code')
+        self.run_btn = QtWidgets.QPushButton('Run Code')
+        self.run_btn.setEnabled(False)
+        btn_layout.addWidget(self.generate_btn)
+        btn_layout.addWidget(self.run_btn)
+        layout.addLayout(btn_layout)
+
+        # Static shapes dropdown
+        self.shape_combo = QtWidgets.QComboBox()
+        shapes = ['Cube', 'Sphere', 'Cylinder', 'Cone', 'Torus', 'Wedge', 'Box', 'Circle', 'Rectangle', 'Polygon']
+        self.shape_combo.addItems(shapes)
+        layout.addWidget(self.shape_combo)
+
+        # Code display
+        self.code_display = QtWidgets.QTextEdit()
+        self.code_display.setReadOnly(True)
+        layout.addWidget(self.code_display)
+
+        # Connections
+        self.generate_btn.clicked.connect(self.generate_code)
+        self.run_btn.clicked.connect(self.run_code)
+        self.shape_combo.currentIndexChanged.connect(self.create_static_shape)
+
+    # Save/load functions
+    def save_api_key(self, key: str):
+        settings = App.ParamGet("User parameter:BaseApp/AIPlugin")
+        settings.SetString("OpenAI_APIKey", key)
+
+    def load_api_key(self) -> str:
+        settings = App.ParamGet("User parameter:BaseApp/AIPlugin")
+        return settings.GetString("OpenAI_APIKey", "")
+
+    def create_static_shape(self):
+        shape = self.shape_combo.currentText()
+        doc = App.ActiveDocument
+        if doc is None:
+            doc = App.newDocument("Doc")
+
+        code = ""
+
+        if shape == 'Cube':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                box = Part.makeBox(10,10,10)
+                Part.show(box, "Cube")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Sphere':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                sphere = Part.makeSphere(10)
+                Part.show(sphere, "Sphere")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Cylinder':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                cyl = Part.makeCylinder(5,15)
+                Part.show(cyl, "Cylinder")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Cone':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                cone = Part.makeCone(5,2,15)
+                Part.show(cone, "Cone")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Torus':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                torus = Part.makeTorus(10,3)
+                Part.show(torus, "Torus")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Wedge':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                wedge = Part.makeWedge(10,15,20,5,10)
+                Part.show(wedge, "Wedge")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Box':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                box = Part.makeBox(15,10,5)
+                Part.show(box, "Box")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Circle':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                circle = Part.makeCircle(10)
+                Part.show(circle, "Circle")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Rectangle':
+            code = textwrap.dedent("""
+                import Part
+                doc = App.ActiveDocument
+                rectangle = Part.makePolygon([
+                    App.Vector(0,0,0),
+                    App.Vector(20,0,0),
+                    App.Vector(20,10,0),
+                    App.Vector(0,10,0),
+                    App.Vector(0,0,0)
+                ])
+                Part.show(rectangle, "Rectangle")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+        elif shape == 'Polygon':
+            code = textwrap.dedent("""
+                import Part
+                import math
+                doc = App.ActiveDocument
+                n = 6
+                r = 10
+                points = []
+                for i in range(n):
+                    angle = 2*math.pi*i/n
+                    points.append(App.Vector(r*math.cos(angle), r*math.sin(angle),0))
+                points.append(points[0])
+                polygon = Part.makePolygon(points)
+                Part.show(polygon, "Polygon")
+                doc.recompute()
+                AppGui.updateGui()
+            """)
+
+        self.code_display.setPlainText(code)
+        self.run_btn.setEnabled(True)
+
+    def generate_code(self):
+        key = self.api_input.text().strip()
+        self.save_api_key(key)
+
+        if not OPENAI_AVAILABLE:
+            App.Console.PrintError("OpenAI library not available.\n")
+            return
+
+        prompt = self.prompt_input.toPlainText().strip()
+        if not key or not prompt:
+            App.Console.PrintError("Enter API key and prompt.\n")
+            return
+
+        try:
+            openai.api_key = key
+            client = openai.OpenAI(api_key=key)
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are an assistant that generates Python code for FreeCAD."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            code = response.choices[0].message.content
+            match = re.search(r'```python(.*?)```', code, re.DOTALL)
+            if match:
+                self.code_display.setPlainText(match.group(1).strip())
+                self.run_btn.setEnabled(True)
+            else:
+                self.code_display.setPlainText(code)
+                self.run_btn.setEnabled(False)
+        except Exception as e:
+            App.Console.PrintError(f"Error: {e}\n")
+
+    def run_code(self):
+        code = self.code_display.toPlainText()
+        if not code:
+            App.Console.PrintError("No code to run.\n")
+            return
+        try:
+            exec(code, globals())
+            App.Console.PrintMessage("Code executed successfully.\n")
+        except Exception:
+            App.Console.PrintError("Error running code:\n" + traceback.format_exc() + "\n")
+
+
+# Function to call from Macro menu
+def ShowDialog():
+    dlg = FreeCADAIDialog()
+    dlg.exec_()
+
+
+if __name__ == "__main__":
+    ShowDialog()
