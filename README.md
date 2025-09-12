@@ -5,6 +5,7 @@
 **Contact:** contact@kmtec.co.uk
 
 This FreeCAD workbench allows beginners to create **basic shapes** and **AI-generated FreeCAD Python code** using OpenAI GPT models.
+Refer Video for how to use : https://www.youtube.com/watch?v=A5RcIuHeWmE
 
 ## Features
 - Static shapes: Cube, Sphere, Cylinder, Cone, Torus, Wedge, Box, Circle, Rectangle, Polygon
