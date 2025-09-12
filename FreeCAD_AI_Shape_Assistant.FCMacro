@@ -1,4 +1,8 @@
-# -*- coding: utf-8 -*-
+# Created by Kmtec Ltd Uk contact@kmtec.co.uk Khaja Mohamed
+# Feel free to extend this plugin
+# You will need Open AI key which you can obtain from openai website
+# Also possible to create simple shapes without any AI , i will update it more
+# If you intend you can also update this to benefit the wider community
 
 import FreeCAD as App
 import FreeCADGui as AppGui
