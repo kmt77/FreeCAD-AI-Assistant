@@ -1,8 +1,8 @@
 
 # FreeCAD AI & Static Shape Assistant
 
-**Author:** Kmtec Ltd  
-**Contact:** contact@kmtec.co.uk
+**Author:** Query Education ( QueryEd.com )
+**Contact:** contact@queryed.com
 
 This FreeCAD workbench allows beginners to create **basic shapes** and **AI-generated FreeCAD Python code** using OpenAI GPT models.
 Refer Video for how to use : https://www.youtube.com/watch?v=A5RcIuHeWmE
